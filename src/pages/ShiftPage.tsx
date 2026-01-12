@@ -1,14 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Sun, Sunset, Moon, ArrowRight, Loader2 } from 'lucide-react';
+import { Sun, Sunset, Moon, ArrowRight, Loader2, History, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type ShiftType = 'morning' | 'afternoon' | 'night';
+
+interface CompletedSession {
+  id: string;
+  shift: ShiftType;
+  completed_at: string;
+}
 
 const shifts = [
   {
@@ -40,12 +48,45 @@ const shifts = [
   },
 ];
 
+const shiftLabels: Record<ShiftType, string> = {
+  morning: 'Manhã',
+  afternoon: 'Tarde',
+  night: 'Noite',
+};
+
 export default function ShiftPage() {
   const [selectedShift, setSelectedShift] = useState<ShiftType | null>(null);
   const [loading, setLoading] = useState(false);
+  const [completedSessions, setCompletedSessions] = useState<CompletedSession[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (user) {
+      fetchCompletedSessions();
+    }
+  }, [user]);
+
+  const fetchCompletedSessions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('form_sessions')
+        .select('id, shift, completed_at')
+        .eq('user_id', user!.id)
+        .eq('is_complete', true)
+        .order('completed_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+      setCompletedSessions(data || []);
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const handleStartForm = async () => {
     if (!selectedShift || !user) return;
@@ -73,6 +114,16 @@ export default function ShiftPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   return (
@@ -146,6 +197,42 @@ export default function ShiftPage() {
             </>
           )}
         </Button>
+
+        {/* Recent Checklists History */}
+        {completedSessions.length > 0 && (
+          <div className="mt-12">
+            <div className="flex items-center gap-2 mb-4">
+              <History className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold text-foreground">Checklists Recentes</h2>
+            </div>
+            <div className="space-y-2">
+              {completedSessions.map((session) => (
+                <Card
+                  key={session.id}
+                  className="p-4 bg-card/50 border-border hover:bg-card/80 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/results/${session.id}`)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-medium text-foreground">
+                          Turno: {shiftLabels[session.shift]}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatDate(session.completed_at)}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-status-ok border-status-ok/50">
+                      Concluído
+                    </Badge>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

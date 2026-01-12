@@ -1,10 +1,12 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, ArrowRight, FileText } from 'lucide-react';
 
 export default function SuccessPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get('sessionId');
 
   return (
     <div className="min-h-screen bg-background">
@@ -26,6 +28,16 @@ export default function SuccessPage() {
           </p>
 
           <div className="w-full space-y-3">
+            {sessionId && (
+              <Button
+                onClick={() => navigate(`/results/${sessionId}`)}
+                variant="outline"
+                className="w-full py-6 text-lg font-semibold gap-2"
+              >
+                <FileText className="h-5 w-5" />
+                Ver Relatório e Exportar PDF
+              </Button>
+            )}
             <Button
               onClick={() => navigate('/shift')}
               className="w-full py-6 text-lg font-semibold bg-primary hover:bg-primary/90 shadow-glow-primary"
