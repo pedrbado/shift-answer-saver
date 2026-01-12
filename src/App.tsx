@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import ShiftPage from "./pages/ShiftPage";
 import FormPage from "./pages/FormPage";
+import ResultsPage from "./pages/ResultsPage";
 import SuccessPage from "./pages/SuccessPage";
 import NotFound from "./pages/NotFound";
 
@@ -37,6 +38,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <FormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/results/:sessionId"
+              element={
+                <ProtectedRoute>
+                  <ResultsPage />
                 </ProtectedRoute>
               }
             />

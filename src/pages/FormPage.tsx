@@ -139,7 +139,7 @@ export default function FormPage() {
         description: 'Suas respostas foram salvas com sucesso.',
       });
 
-      navigate('/success');
+      navigate(`/results/${sessionId}`);
     } catch (error) {
       toast({
         title: 'Erro ao enviar',
