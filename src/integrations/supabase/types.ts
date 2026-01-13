@@ -62,6 +62,8 @@ export type Database = {
           completed_at: string | null
           id: string
           is_complete: boolean
+          operation_id: string | null
+          production_line_id: string | null
           shift: Database["public"]["Enums"]["shift_type"]
           started_at: string
           user_id: string
@@ -71,6 +73,8 @@ export type Database = {
           completed_at?: string | null
           id?: string
           is_complete?: boolean
+          operation_id?: string | null
+          production_line_id?: string | null
           shift: Database["public"]["Enums"]["shift_type"]
           started_at?: string
           user_id: string
@@ -80,9 +84,82 @@ export type Database = {
           completed_at?: string | null
           id?: string
           is_complete?: boolean
+          operation_id?: string | null
+          production_line_id?: string | null
           shift?: Database["public"]["Enums"]["shift_type"]
           started_at?: string
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_sessions_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_sessions_production_line_id_fkey"
+            columns: ["production_line_id"]
+            isOneToOne: false
+            referencedRelation: "production_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operations: {
+        Row: {
+          created_at: string
+          id: string
+          operation_name: string
+          operation_number: number
+          production_line_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          operation_name: string
+          operation_number: number
+          production_line_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          operation_name?: string
+          operation_number?: number
+          production_line_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operations_production_line_id_fkey"
+            columns: ["production_line_id"]
+            isOneToOne: false
+            referencedRelation: "production_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_lines: {
+        Row: {
+          area: Database["public"]["Enums"]["area_type"]
+          created_at: string
+          id: string
+          line_name: string
+          line_number: number
+        }
+        Insert: {
+          area: Database["public"]["Enums"]["area_type"]
+          created_at?: string
+          id?: string
+          line_name: string
+          line_number: number
+        }
+        Update: {
+          area?: Database["public"]["Enums"]["area_type"]
+          created_at?: string
+          id?: string
+          line_name?: string
+          line_number?: number
         }
         Relationships: []
       }
@@ -137,13 +214,7 @@ export type Database = {
     }
     Enums: {
       answer_status: "ok" | "nok" | "na"
-      area_type:
-        | "production"
-        | "warehouse"
-        | "maintenance"
-        | "quality"
-        | "logistics"
-        | "administrative"
+      area_type: "estamparia" | "solda"
       shift_type: "morning" | "afternoon" | "night"
     }
     CompositeTypes: {
@@ -273,14 +344,7 @@ export const Constants = {
   public: {
     Enums: {
       answer_status: ["ok", "nok", "na"],
-      area_type: [
-        "production",
-        "warehouse",
-        "maintenance",
-        "quality",
-        "logistics",
-        "administrative",
-      ],
+      area_type: ["estamparia", "solda"],
       shift_type: ["morning", "afternoon", "night"],
     },
   },

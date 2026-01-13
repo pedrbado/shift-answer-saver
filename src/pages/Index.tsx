@@ -17,7 +17,7 @@ const Index = () => {
   }
 
   if (user) {
-    return <Navigate to="/shift" replace />;
+    return <Navigate to="/area" replace />;
   }
 
   return <Navigate to="/auth" replace />;
