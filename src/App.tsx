@@ -10,6 +10,7 @@ import AuthPage from "./pages/AuthPage";
 import ShiftPage from "./pages/ShiftPage";
 import FormPage from "./pages/FormPage";
 import ResultsPage from "./pages/ResultsPage";
+import HistoryPage from "./pages/HistoryPage";
 import SuccessPage from "./pages/SuccessPage";
 import NotFound from "./pages/NotFound";
 
@@ -46,6 +47,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ResultsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute>
+                  <HistoryPage />
                 </ProtectedRoute>
               }
             />
