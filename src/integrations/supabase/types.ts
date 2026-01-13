@@ -58,6 +58,7 @@ export type Database = {
       }
       form_sessions: {
         Row: {
+          area: Database["public"]["Enums"]["area_type"]
           completed_at: string | null
           id: string
           is_complete: boolean
@@ -66,6 +67,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          area?: Database["public"]["Enums"]["area_type"]
           completed_at?: string | null
           id?: string
           is_complete?: boolean
@@ -74,6 +76,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          area?: Database["public"]["Enums"]["area_type"]
           completed_at?: string | null
           id?: string
           is_complete?: boolean
@@ -134,6 +137,13 @@ export type Database = {
     }
     Enums: {
       answer_status: "ok" | "nok" | "na"
+      area_type:
+        | "production"
+        | "warehouse"
+        | "maintenance"
+        | "quality"
+        | "logistics"
+        | "administrative"
       shift_type: "morning" | "afternoon" | "night"
     }
     CompositeTypes: {
@@ -263,6 +273,14 @@ export const Constants = {
   public: {
     Enums: {
       answer_status: ["ok", "nok", "na"],
+      area_type: [
+        "production",
+        "warehouse",
+        "maintenance",
+        "quality",
+        "logistics",
+        "administrative",
+      ],
       shift_type: ["morning", "afternoon", "night"],
     },
   },
