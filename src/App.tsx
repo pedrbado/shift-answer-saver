@@ -7,6 +7,7 @@ import { AuthProvider } from "@/lib/auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
+import AreaSelectionPage from "./pages/AreaSelectionPage";
 import ShiftPage from "./pages/ShiftPage";
 import FormPage from "./pages/FormPage";
 import ResultsPage from "./pages/ResultsPage";
@@ -26,6 +27,14 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route
+              path="/area"
+              element={
+                <ProtectedRoute>
+                  <AreaSelectionPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/shift"
               element={

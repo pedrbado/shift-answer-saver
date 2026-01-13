@@ -25,11 +25,12 @@ import {
   Sun,
   Sunset,
   Moon,
-  Building2,
+  Factory,
+  Zap,
 } from 'lucide-react';
 
 type ShiftType = 'morning' | 'afternoon' | 'night';
-type AreaType = 'production' | 'warehouse' | 'maintenance' | 'quality' | 'logistics' | 'administrative';
+type AreaType = 'estamparia' | 'solda';
 
 interface FormSession {
   id: string;
@@ -38,6 +39,18 @@ interface FormSession {
   started_at: string;
   completed_at: string | null;
   is_complete: boolean;
+  production_line_id: string | null;
+  operation_id: string | null;
+}
+
+interface ProductionLine {
+  id: string;
+  line_name: string;
+}
+
+interface Operation {
+  id: string;
+  operation_name: string;
 }
 
 const shiftLabels: Record<ShiftType, string> = {
@@ -47,12 +60,8 @@ const shiftLabels: Record<ShiftType, string> = {
 };
 
 const areaLabels: Record<AreaType, string> = {
-  production: 'Produção',
-  warehouse: 'Almoxarifado',
-  maintenance: 'Manutenção',
-  quality: 'Qualidade',
-  logistics: 'Logística',
-  administrative: 'Administrativo',
+  estamparia: 'Estamparia',
+  solda: 'Solda',
 };
 
 const shiftIcons: Record<ShiftType, React.ReactNode> = {
@@ -61,12 +70,19 @@ const shiftIcons: Record<ShiftType, React.ReactNode> = {
   night: <Moon className="h-4 w-4 text-blue-400" />,
 };
 
+const areaIcons: Record<AreaType, React.ReactNode> = {
+  estamparia: <Factory className="h-4 w-4 text-blue-400" />,
+  solda: <Zap className="h-4 w-4 text-orange-400" />,
+};
+
 export default function HistoryPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
 
   const [sessions, setSessions] = useState<FormSession[]>([]);
+  const [productionLines, setProductionLines] = useState<Record<string, ProductionLine>>({});
+  const [operations, setOperations] = useState<Record<string, Operation>>({});
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -76,17 +92,48 @@ export default function HistoryPage() {
   const [filterArea, setFilterArea] = useState<string>('all');
 
   useEffect(() => {
+    fetchProductionLinesAndOperations();
+  }, []);
+
+  useEffect(() => {
     if (user) {
       fetchSessions();
     }
   }, [user, dateFrom, dateTo, filterShift, filterArea]);
+
+  const fetchProductionLinesAndOperations = async () => {
+    try {
+      const [linesRes, opsRes] = await Promise.all([
+        supabase.from('production_lines').select('id, line_name'),
+        supabase.from('operations').select('id, operation_name'),
+      ]);
+
+      if (linesRes.data) {
+        const linesMap: Record<string, ProductionLine> = {};
+        linesRes.data.forEach(line => {
+          linesMap[line.id] = line;
+        });
+        setProductionLines(linesMap);
+      }
+
+      if (opsRes.data) {
+        const opsMap: Record<string, Operation> = {};
+        opsRes.data.forEach(op => {
+          opsMap[op.id] = op;
+        });
+        setOperations(opsMap);
+      }
+    } catch (error) {
+      console.error('Error fetching production lines and operations:', error);
+    }
+  };
 
   const fetchSessions = async () => {
     setLoading(true);
     try {
       let query = supabase
         .from('form_sessions')
-        .select('id, shift, area, started_at, completed_at, is_complete')
+        .select('id, shift, area, started_at, completed_at, is_complete, production_line_id, operation_id')
         .eq('user_id', user!.id)
         .eq('is_complete', true)
         .order('completed_at', { ascending: false });
@@ -151,7 +198,7 @@ export default function HistoryPage() {
       <main className="container max-w-4xl px-4 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" onClick={() => navigate('/shift')} className="gap-2">
+          <Button variant="ghost" onClick={() => navigate('/area')} className="gap-2">
             <ArrowLeft className="h-4 w-4" />
             Voltar
           </Button>
@@ -230,12 +277,8 @@ export default function HistoryPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as áreas</SelectItem>
-                  <SelectItem value="production">Produção</SelectItem>
-                  <SelectItem value="warehouse">Almoxarifado</SelectItem>
-                  <SelectItem value="maintenance">Manutenção</SelectItem>
-                  <SelectItem value="quality">Qualidade</SelectItem>
-                  <SelectItem value="logistics">Logística</SelectItem>
-                  <SelectItem value="administrative">Administrativo</SelectItem>
+                  <SelectItem value="estamparia">Estamparia</SelectItem>
+                  <SelectItem value="solda">Solda</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -279,15 +322,25 @@ export default function HistoryPage() {
                           {formatDate(session.completed_at || session.started_at)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
                           {shiftIcons[session.shift]}
                           {shiftLabels[session.shift]}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Building2 className="h-3 w-3" />
+                          {areaIcons[session.area]}
                           {areaLabels[session.area]}
                         </span>
+                        {session.production_line_id && productionLines[session.production_line_id] && (
+                          <span className="text-xs">
+                            {productionLines[session.production_line_id].line_name}
+                          </span>
+                        )}
+                        {session.operation_id && operations[session.operation_id] && (
+                          <span className="text-xs">
+                            {operations[session.operation_id].operation_name}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

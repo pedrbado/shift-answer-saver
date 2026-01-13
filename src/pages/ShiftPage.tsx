@@ -1,23 +1,22 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Sun, Sunset, Moon, ArrowRight, Loader2, History, Building2 } from 'lucide-react';
+import { Sun, Sunset, Moon, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type ShiftType = 'morning' | 'afternoon' | 'night';
-type AreaType = 'production' | 'warehouse' | 'maintenance' | 'quality' | 'logistics' | 'administrative';
+type AreaType = 'estamparia' | 'solda';
+
+interface LocationState {
+  area: AreaType;
+  productionLineId: string;
+  operationId: string;
+}
 
 const shifts = [
   {
@@ -49,25 +48,25 @@ const shifts = [
   },
 ];
 
-const areas: { id: AreaType; label: string }[] = [
-  { id: 'production', label: 'Produção' },
-  { id: 'warehouse', label: 'Almoxarifado' },
-  { id: 'maintenance', label: 'Manutenção' },
-  { id: 'quality', label: 'Qualidade' },
-  { id: 'logistics', label: 'Logística' },
-  { id: 'administrative', label: 'Administrativo' },
-];
-
 export default function ShiftPage() {
   const [selectedShift, setSelectedShift] = useState<ShiftType | null>(null);
-  const [selectedArea, setSelectedArea] = useState<AreaType | null>(null);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
+  const locationState = location.state as LocationState | null;
+
+  // Redirect if no area selection
+  useEffect(() => {
+    if (!locationState?.area || !locationState?.productionLineId || !locationState?.operationId) {
+      navigate('/area');
+    }
+  }, [locationState, navigate]);
+
   const handleStartForm = async () => {
-    if (!selectedShift || !selectedArea || !user) return;
+    if (!selectedShift || !user || !locationState) return;
 
     setLoading(true);
     try {
@@ -76,7 +75,9 @@ export default function ShiftPage() {
         .insert({
           user_id: user.id,
           shift: selectedShift,
-          area: selectedArea,
+          area: locationState.area,
+          production_line_id: locationState.productionLineId,
+          operation_id: locationState.operationId,
         })
         .select()
         .single();
@@ -85,6 +86,7 @@ export default function ShiftPage() {
 
       navigate(`/form/${data.id}`);
     } catch (error) {
+      console.error('Error creating form session:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível iniciar o formulário.',
@@ -95,39 +97,20 @@ export default function ShiftPage() {
     }
   };
 
+  if (!locationState) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
       <main className="container max-w-2xl px-4 py-8">
         <div className="text-center mb-8 animate-fade-in">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Iniciar Checklist</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Selecionar Turno</h1>
           <p className="text-muted-foreground">
-            Selecione o turno e a área para começar a auditoria
+            Escolha o turno para iniciar o checklist
           </p>
-        </div>
-
-        {/* Area Selection */}
-        <div className="mb-6 animate-slide-in">
-          <Label className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-            Área de Trabalho
-          </Label>
-          <Select
-            value={selectedArea || ''}
-            onValueChange={(value) => setSelectedArea(value as AreaType)}
-          >
-            <SelectTrigger className="w-full py-6 text-base bg-card border-border">
-              <SelectValue placeholder="Selecione a área" />
-            </SelectTrigger>
-            <SelectContent>
-              {areas.map((area) => (
-                <SelectItem key={area.id} value={area.id}>
-                  {area.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Shift Selection */}
@@ -186,33 +169,31 @@ export default function ShiftPage() {
           })}
         </div>
 
-        <Button
-          onClick={handleStartForm}
-          disabled={!selectedShift || !selectedArea || loading}
-          className="w-full py-6 text-lg font-semibold bg-primary hover:bg-primary/90 shadow-glow-primary disabled:opacity-50"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Iniciando...
-            </>
-          ) : (
-            <>
-              Iniciar Checklist
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </>
-          )}
-        </Button>
-
-        {/* History Link */}
-        <div className="mt-8 text-center">
+        <div className="flex gap-4">
           <Button
             variant="outline"
-            onClick={() => navigate('/history')}
-            className="gap-2"
+            onClick={() => navigate('/area')}
+            className="flex-1 py-6 text-lg"
           >
-            <History className="h-4 w-4" />
-            Ver Histórico Completo
+            <ArrowLeft className="mr-2 h-5 w-5" />
+            Voltar
+          </Button>
+          <Button
+            onClick={handleStartForm}
+            disabled={!selectedShift || loading}
+            className="flex-1 py-6 text-lg font-semibold bg-primary hover:bg-primary/90 shadow-glow-primary disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Iniciando...
+              </>
+            ) : (
+              <>
+                Iniciar Checklist
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </>
+            )}
           </Button>
         </div>
       </main>
